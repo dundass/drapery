@@ -81,16 +81,6 @@ void draw() {
   
 }
 
-void mousePressed() {
-  /* in the following different ways of creating osc messages are shown by example */
-  OscMessage myMessage = new OscMessage("/update");
-  
-  myMessage.add(123); /* add an int to the osc message */
-
-  /* send the message */
-  oscP5.send(myMessage, myRemoteLocation); 
-}
-
 
 void keyPressed() {
   if (key == '1') {
