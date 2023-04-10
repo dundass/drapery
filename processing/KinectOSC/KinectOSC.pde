@@ -18,6 +18,10 @@ int maxVerticalSum = 9999999;
 
 final int x_size = 8;
 final int y_size = 4;
+final String ip = "127.0.0.1";
+//final int send_port = 3001; // pure data
+final int send_port = 57120;  // supercollider
+final int receive_port = 3002; // to processing
 
 int[] sums = new int[x_size];
 float[] averages = new float[x_size];
@@ -39,8 +43,8 @@ void setup() {
   
   maxVerticalSum = maxD * height * (width / x_size);
   
-  oscP5 = new OscP5(this, 3002);
-  myRemoteLocation = new NetAddress("127.0.0.1", 3001);
+  oscP5 = new OscP5(this, receive_port);
+  myRemoteLocation = new NetAddress(ip, send_port);
   
   sendIds();
 
