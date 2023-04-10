@@ -27,6 +27,17 @@ SynthDef.new(\tri, {
 	Out.ar(out, sig);
 }).add;
 
+SynthDef.new(\glassy, {
+	arg freq=100, pan=0, out=0; // todo - amp arg
+	var sig, env;
+	freq = freq.clip(20, 20000);
+	pan = pan.clip(-1, 1);
+	env = EnvGen.kr(Env.perc(0.01,2), doneAction:2); // sig = osc * env
+	sig = VarSaw.ar(freq, 0, 0.5, 0.1) * env;
+	sig = Pan2.ar(sig, pan);
+	Out.ar(out, sig);
+}).add;
+
 /* THE FREQUENCY ARRAY */
 
 ~x_size = 8;
