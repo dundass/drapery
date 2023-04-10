@@ -8,24 +8,29 @@ import KinectPV2.*;
 import netP5.*;
 import oscP5.*;
 
+enum Engine {  // maybe ?
+  PureData,
+  Supercollider
+}
+
 KinectPV2 kinect;
 
-//Distance Threashold
+//Distance Threshold
 int maxD = 4500; // 4.5mx
 int minD = 0;  //  50cm
 
 int maxVerticalSum = 9999999;
 
 final int x_size = 8;
-final int y_size = 4;
+final int y_size = 4;  // TODO - y axis expansion !
 final String ip = "127.0.0.1";
 //final int send_port = 3001; // pure data
 final int send_port = 57120;  // supercollider
 final int receive_port = 3002; // to processing
 
-int[] sums = new int[x_size];
-float[] averages = new float[x_size];
-float[] differences = new float[x_size];
+int[] sums = new int[x_size * y_size];
+float[] averages = new float[x_size * y_size];
+float[] differences = new float[x_size * y_size];
 
 float maxDifference = 0;
 
@@ -41,7 +46,7 @@ void setup() {
 
   kinect.init();
   
-  maxVerticalSum = maxD * height * (width / x_size);
+  maxVerticalSum = maxD * (height / y_size) * (width / x_size);
   
   oscP5 = new OscP5(this, receive_port);
   myRemoteLocation = new NetAddress(ip, send_port);
@@ -61,10 +66,11 @@ void draw() {
   for(int i = 0; i < sums.length; i++) sums[i] = 0;
   
   int sumsIdx = 0, dataIdx = 0;
+  int block_x_size = width / x_size, block_y_size = height / y_size;
   
   for(int y = 0; y < height; y++) {
     for(int x = 0; x < width; x++) {
-      sumsIdx = x / (width / x_size);
+      sumsIdx = (x / block_x_size) + ((y / block_y_size) * x_size);
       dataIdx = (y * width) + x;
       sums[sumsIdx] += rawData[dataIdx];
     }
@@ -86,14 +92,13 @@ void draw() {
   
   if(frameCount > 10 && differences[0] > maxDifference) maxDifference = differences[0];
   
-  println(differences[0] + "\t" + maxDifference);
+  //println(differences[0] + "\t" + maxDifference);
   
 }
 
 void mousePressed() {
   sendIds();
 }
-
 
 void keyPressed() {
   if (key == '1') {
@@ -105,6 +110,6 @@ void keyPressed() {
 void sendIds() {
   // send strip/block ids once as a list of normalised floats (for setting pan or other X axis mapping)
   OscMessage idsMessage = new OscMessage("/ids");
-  for(int i = 0; i < x_size; i++) idsMessage.add((float)i / x_size);
+  for(int i = 0; i < x_size * y_size; i++) idsMessage.add((float)i / (x_size * y_size));
   oscP5.send(idsMessage, myRemoteLocation);
 }

@@ -1,6 +1,6 @@
-#N canvas -921 115 556 422 10;
+#N canvas -624 105 556 422 10;
 #X obj 266 134 vsl 15 128 0.01 1 1 0 empty empty empty 0 -9 0 10 -262144
--1 -1 4700 1;
+-1 -1 2500 1;
 #X obj 311 12 loadbang;
 #X obj 311 36 s b;
 #X obj 172 43 unpackOSC;
@@ -9,10 +9,10 @@
 #X obj 196 288 *~;
 #X obj 227 289 *~;
 #X obj 378 145 r b;
-#X obj 183 109 print;
+#X obj 319 124 print;
 #X obj 371 13 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144 -1
 -1;
-#N canvas 782 179 651 756 osc_bank 1;
+#N canvas 782 179 651 756 osc_bank 0;
 #X obj 114 12 inlet;
 #X obj 182 344 outlet~;
 #X obj 231 344 outlet~;
@@ -137,6 +137,7 @@
 #X connect 22 7 21 0;
 #X restore 87 167 pd tri_bank;
 #X obj 172 64 routeOSC /absolute /relative /ids;
+#X msg 334 207 0 0.123 \, 1 9.35 \, 3 458;
 #X connect 0 0 6 1;
 #X connect 0 0 7 1;
 #X connect 1 0 2 0;
@@ -147,7 +148,8 @@
 #X connect 10 0 2 0;
 #X connect 13 0 6 0;
 #X connect 13 1 7 0;
-#X connect 14 0 9 0;
 #X connect 14 0 13 0;
 #X connect 14 2 13 1;
 #X connect 14 2 11 1;
+#X connect 14 2 9 0;
+#X connect 15 0 9 0;

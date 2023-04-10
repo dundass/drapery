@@ -6,7 +6,7 @@ OSCdef.freeAll; // help, purge !!
 (  /* SYNTHDEF */
 
 SynthDef.new(\osc, {
-	arg freq=100, pan=0, out=0;
+	arg freq=100, pan=0, out=0; // todo - amp arg
 	var sig, env;
 	freq = freq.clip(20, 20000);
 	pan = pan.clip(-1, 1);
@@ -17,7 +17,7 @@ SynthDef.new(\osc, {
 }).add;
 
 SynthDef.new(\tri, {
-	arg freq=100, pan=0, out=0;
+	arg freq=100, pan=0, out=0; // todo - amp arg
 	var sig, env;
 	freq = freq.clip(20, 20000);
 	pan = pan.clip(-1, 1);
@@ -29,7 +29,10 @@ SynthDef.new(\tri, {
 
 /* THE FREQUENCY ARRAY */
 
-~oscfreqs = Array.fill(8, { 0.0 });
+~x_size = 8;
+~y_size = 4;
+
+~oscfreqs = Array.fill(~x_size * ~y_size, { 0.0 });
 
 )
 
@@ -52,7 +55,10 @@ OSCdef.new(\rel, {
 		arg item, i;
 		if(i > 0 && item.isNumber, {
 			if(item > 0.025, {
-				Synth.new(\tri, [freq: ~oscfreqs[i-1], pan: -1 + (2 * i / 8)]);
+				Synth.new(\tri, [
+					freq: ~oscfreqs[i-1],
+					pan: -1 + (2 * (i%~x_size) / ~x_size)
+				]);
 				~oscfreqs[i-1].postln;
 			});
 		});
