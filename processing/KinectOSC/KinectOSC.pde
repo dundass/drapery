@@ -1,6 +1,6 @@
 
 /*
-read depth in 8 vertical strip sums and send over osc
+read depth in 8 vertical strip averages and send over osc
 */
 
 import KinectPV2.KJoint;
@@ -16,9 +16,12 @@ int minD = 0;  //  50cm
 
 int maxVerticalSum = 9999999;
 
-int[] sums = new int[8];
-float[] averages = new float[8];
-float[] differences = new float[8];
+final int x_size = 8;
+final int y_size = 4;
+
+int[] sums = new int[x_size];
+float[] averages = new float[x_size];
+float[] differences = new float[x_size];
 
 float maxDifference = 0;
 
@@ -34,10 +37,12 @@ void setup() {
 
   kinect.init();
   
-  maxVerticalSum = maxD * height * (width / 8);
+  maxVerticalSum = maxD * height * (width / x_size);
   
   oscP5 = new OscP5(this, 3002);
   myRemoteLocation = new NetAddress("127.0.0.1", 3001);
+  
+  sendIds();
 
 }
 
@@ -55,7 +60,7 @@ void draw() {
   
   for(int y = 0; y < height; y++) {
     for(int x = 0; x < width; x++) {
-      sumsIdx = x / (width / 8);
+      sumsIdx = x / (width / x_size);
       dataIdx = (y * width) + x;
       sums[sumsIdx] += rawData[dataIdx];
     }
@@ -81,10 +86,21 @@ void draw() {
   
 }
 
+void mousePressed() {
+  sendIds();
+}
+
 
 void keyPressed() {
   if (key == '1') {
     minD += 10;
     println("Change min: "+minD);
   }
+}
+
+void sendIds() {
+  // send strip/block ids once as a list of normalised floats (for setting pan or other X axis mapping)
+  OscMessage idsMessage = new OscMessage("/ids");
+  for(int i = 0; i < x_size; i++) idsMessage.add((float)i / x_size);
+  oscP5.send(idsMessage, myRemoteLocation);
 }
