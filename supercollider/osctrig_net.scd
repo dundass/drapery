@@ -3,7 +3,7 @@ OSCFunc.trace(false); // prints every incoming message to SC
 
 OSCdef.freeAll; // help, purge !!
 
-(  /* SYNTHDEF */
+(  /* SYNTHDEFS */
 
 SynthDef.new(\osc, {
 	arg freq=100, pan=0, amp=0.05, out=0;
@@ -49,6 +49,7 @@ SynthDef.new(\pulse, {
 
 (  /* OSC LISTENERS */
 
+// absolute depth values - update the frequencies
 OSCdef.new(\abs, {
 	arg msg, time, addr, port;
 	msg.do({
@@ -60,6 +61,7 @@ OSCdef.new(\abs, {
 	});
 }, '/absolute');
 
+// delta depth values - trigger the synths
 OSCdef.new(\rel, {
 	arg msg, time, addr, port;
 	msg.do({
@@ -68,7 +70,7 @@ OSCdef.new(\rel, {
 			if(item > 0.025, {
 				Synth.new(\pulse, [
 					freq: ~oscfreqs[i-1],
-					pan: -1 + (2 * (i%~x_size) / ~x_size),
+					pan: 1 - (2 * (i%~x_size) / ~x_size),
 					amp: 0.025 + (item / 10),
 					duty: 0.25
 				]);
@@ -79,6 +81,7 @@ OSCdef.new(\rel, {
 	//msg.postln;
 }, '/relative');
 
+// index array - sent as part of init
 OSCdef.new(\ids, {
 	arg msg, time, addr, port;
 	msg.postln;
