@@ -24,8 +24,8 @@ int maxVerticalSum = 9999999;
 final int x_size = 8;
 final int y_size = 4;  // TODO - y axis expansion !
 final String ip = "127.0.0.1";
-final int send_port = 3001; // pure data
-//final int send_port = 57120;  // supercollider
+//final int send_port = 3001; // pure data
+final int send_port = 57120;  // supercollider
 final int receive_port = 3002; // to processing
 
 int[] sums = new int[x_size * y_size];
