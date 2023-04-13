@@ -47,7 +47,10 @@ SynthDef.new(\pulse, {
 
 ~oscbank = Array.fill(~x_size * ~y_size, {
 	arg i;
-	Synth.new(\pulse);
+	Synth.new(\pulse, [
+		freq: 100 + (i * 2),
+		duty: 0.25
+	]);
 });
 
 )
@@ -62,32 +65,38 @@ SynthDef.new(\pulse, {
 // absolute depth values - set the synth freqs
 OSCdef.new(\abs, {
 	arg msg, time, addr, port;
-	~oscbank.do({
+	/*~oscbank.do({
 		arg item, i;
 		item.set(\freq, (msg[i+1]**2) * 20000);
 		//[i, item].postln;
-	});
+	});*/
+	~oscbank[msg[1]].set(\freq, (msg[2]**2) * 20000);
 }, '/absolute');
 
 // delta depth values
 OSCdef.new(\rel, {
 	arg msg, time, addr, port;
 	//msg.postln;
-	~oscbank.do({
+	/*~oscbank.do({
 		arg item, i;
-		item.set(\amp, 0.025 + msg[i+1]/10);
+		item.set(\amp, 0.05 + msg[i+1]/5);
+		item.set(\duty, 0.25 + msg[i+1]/10);
 		//[i, item].postln;
-	});
+	});*/
+	~oscbank[msg[1]].set(\amp, 0.05+(msg[2]/5));
+
+	~oscbank[msg[1]].set(\duty, 0.25+(msg[2]/5));
 }, '/relative');
 
 // index array - set the pan values of the synths
 OSCdef.new(\ids, {
 	arg msg, time, addr, port;
 	msg.postln;
-	~oscbank.do({
+	/*~oscbank.do({
 		arg item, i;
-		item.set(\pan, -1 + (2 * msg[i+1]%~x_size));
-	});
+		item.set(\pan, 1 - (2 * msg[i+1]%~x_size));
+	});*/
+	~oscbank[msg[1]].set(\pan, 1 - (2 * msg[1]%~x_size));
 }, '/ids');
 
 )

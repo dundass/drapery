@@ -1,6 +1,6 @@
 
 /*
-read depth in 8 vertical strip averages and send over osc
+read depth in 8x4 block averages and send over osc
 */
 
 import KinectPV2.KJoint;
@@ -8,7 +8,7 @@ import KinectPV2.*;
 import netP5.*;
 import oscP5.*;
 
-enum Engine {  // maybe ?
+enum Engine {  // maybe ? fancy !
   PureData,
   Supercollider
 }
@@ -24,8 +24,8 @@ int maxVerticalSum = 9999999;
 final int x_size = 8;
 final int y_size = 4;  // TODO - y axis expansion !
 final String ip = "127.0.0.1";
-//final int send_port = 3001; // pure data
-final int send_port = 57120;  // supercollider
+final int send_port = 3001; // pure data
+//final int send_port = 57120;  // supercollider
 final int receive_port = 3002; // to processing
 
 int[] sums = new int[x_size * y_size];
@@ -86,12 +86,18 @@ void draw() {
     float newAverage = map((float)sums[i] / maxVerticalSum, 0, 1, 0.05, 0.3);
     differences[i] = abs(averages[i] - newAverage) * 10;
     averages[i] = newAverage;
+    absMessage.add(i);
     absMessage.add(averages[i]);
+    relMessage.add(i);
     relMessage.add(differences[i]);
+    if(frameCount > 3) {
+      // let the rel values settle in ...
+      oscP5.send(absMessage, myRemoteLocation);
+      oscP5.send(relMessage, myRemoteLocation);
+    }
+    absMessage.clearArguments();
+    relMessage.clearArguments();
   }
-  
-  oscP5.send(absMessage, myRemoteLocation);
-  oscP5.send(relMessage, myRemoteLocation);
   
   //if(frameCount > 10 && differences[0] > maxDifference) maxDifference = differences[0];
   //println(differences[0] + "\t" + maxDifference);
@@ -100,7 +106,6 @@ void draw() {
   stroke(255);
   for(int x = 1; x < x_size; x++) line(x * block_x_size, 0, x * block_x_size, height);
   for(int y = 1; y < y_size; y++) line(0, y * block_y_size, width, y * block_y_size);
-  
   
 }
 
@@ -118,6 +123,9 @@ void keyPressed() {
 void sendIds() {
   // send strip/block ids once as a list of normalised floats (for setting pan or other X axis mapping)
   OscMessage idsMessage = new OscMessage("/ids");
-  for(int i = 0; i < x_size * y_size; i++) idsMessage.add((float)i / (x_size * y_size));
-  oscP5.send(idsMessage, myRemoteLocation);
+  for(int i = 0; i < x_size * y_size; i++) {
+    idsMessage.add((float)i / (x_size * y_size));
+    oscP5.send(idsMessage, myRemoteLocation);
+    idsMessage.clearArguments();
+  }
 }

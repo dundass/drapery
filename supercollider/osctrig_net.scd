@@ -10,7 +10,7 @@ SynthDef.new(\osc, {
 	var sig, env;
 	freq = freq.clip(20, 20000);
 	pan = pan.clip(-1, 1);
-	env = EnvGen.kr(Env.perc(0.1,1), doneAction:2); // sig = osc * env
+	env = EnvGen.kr(Env.perc(0.1,1), doneAction:2);
 	sig = SinOsc.ar(freq, 0, amp) * env;
 	sig = Pan2.ar(sig, pan);
 	Out.ar(out, sig);
@@ -21,7 +21,7 @@ SynthDef.new(\tri, {
 	var sig, env;
 	freq = freq.clip(20, 20000);
 	pan = pan.clip(-1, 1);
-	env = EnvGen.kr(Env.perc(0.1,1), doneAction:2); // sig = osc * env
+	env = EnvGen.kr(Env.perc(0.1,1), doneAction:2);
 	sig = VarSaw.ar(freq, 0, duty, amp) * env;
 	sig = Pan2.ar(sig, pan);
 	Out.ar(out, sig);
@@ -32,7 +32,7 @@ SynthDef.new(\pulse, {
 	var sig, env;
 	freq = freq.clip(20, 20000);
 	pan = pan.clip(-1, 1);
-	env = EnvGen.kr(Env.perc(0.1,1), doneAction:2); // sig = osc * env
+	env = EnvGen.kr(Env.perc(0.1,1), doneAction:2);
 	sig = Pulse.ar(freq, duty, amp) * env;
 	sig = Pan2.ar(sig, pan);
 	Out.ar(out, sig);
@@ -52,19 +52,20 @@ SynthDef.new(\pulse, {
 // absolute depth values - update the frequencies
 OSCdef.new(\abs, {
 	arg msg, time, addr, port;
-	msg.do({
+	/*msg.do({
 		arg item, i;
 		if(i > 0, {
 			~oscfreqs[i-1] = (msg[i]**2) * 20000;
 		});
 		//[i, item].postln;
-	});
+	});*/
+	~oscfreqs[msg[1]] = (msg[2]**2) * 20000;
 }, '/absolute');
 
 // delta depth values - trigger the synths
 OSCdef.new(\rel, {
 	arg msg, time, addr, port;
-	msg.do({
+	/*msg.do({
 		arg item, i;
 		if(i > 0 && item.isNumber, {
 			if(item > 0.025, {
@@ -77,6 +78,15 @@ OSCdef.new(\rel, {
 				~oscfreqs[i-1].postln;
 			});
 		});
+	});*/
+	if(msg[2] > 0.025, {
+		Synth.new(\pulse, [
+			freq: ~oscfreqs[msg[1]],
+			pan: 1 - (2 * (msg[1]%~x_size) / ~x_size),
+			amp: 0.025 + (msg[2] / 10),
+			duty: 0.25
+		]);
+		~oscfreqs[msg[1]].postln;
 	});
 	//msg.postln;
 }, '/relative');
