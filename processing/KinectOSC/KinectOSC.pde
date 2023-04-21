@@ -24,9 +24,10 @@ int maxVerticalSum = 9999999;
 final int x_size = 8;
 final int y_size = 4;  // TODO - y axis expansion !
 final String ip = "127.0.0.1";
-final int send_port = 3001; // pure data
-//final int send_port = 57120;  // supercollider
+//final int send_port = 3001; // pure data
+final int send_port = 57120;  // supercollider
 final int receive_port = 3002; // to processing
+final boolean flipVertical = true;
 
 int[] sums = new int[x_size * y_size];
 float[] averages = new float[x_size * y_size];
@@ -58,7 +59,15 @@ void setup() {
 void draw() {
   background(0);
 
+  // draw the depth image
+  pushMatrix();
+  if(flipVertical) {
+    // flip the drawn image to sync with the speakers and sheet
+    translate(width, 0);
+    scale(-1, 1);
+  }
   image(kinect.getDepthImage(), 0, 0);
+  popMatrix();
   
   //obtain the raw depth data in integers from [0 - 4500]
   int [] rawData = kinect.getRawDepthData();
@@ -83,6 +92,7 @@ void draw() {
   OscMessage absMessage = new OscMessage("/absolute");
   
   for(int i = 0; i < sums.length; i++) {
+    // calc averages and distances, and send them
     float newAverage = map((float)sums[i] / maxVerticalSum, 0, 1, 0.05, 0.3);
     differences[i] = abs(averages[i] - newAverage) * 10;
     averages[i] = newAverage;

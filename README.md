@@ -11,7 +11,14 @@ the sound engine can either be SuperCollider or Pure Data. either one maps the 3
 # todo
 
 try quantising the frequency to chromatic or diatonic scales
-buy lots of fans
 explore different fabrics
 explore using sensors woven into the fabric using Bela Craft
 refactor use of 'clone' PD object to allow porting to Organelle/HVCC devices
+
+# cellular automata
+
+allow the depth feed to influence CA layer(s) which then evolve and elaborate on the shape of the sheet
+
+this enables multiple mappings/sound engines to be run from differing but related streams, and altering/toggling these mappings will make it more expressive
+
+the fact that CA must be clocked can give the performances a rhythmic element, unless the clock speed is super high

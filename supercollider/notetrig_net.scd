@@ -49,6 +49,8 @@ SynthDef.new(\pulse, {
 
 (  /* OSC LISTENERS */
 
+~scale = [0,2,4,5,7,9,11,12];
+
 // absolute depth values - save for trig later
 OSCdef.new(\abs, {
 	arg msg, time, addr, port;
@@ -60,16 +62,17 @@ OSCdef.new(\abs, {
 OSCdef.new(\rel, {
 	arg msg, time, addr, port;
 	// msg[1] = index; msg[2] = rel depth
-	var y_coordinate = msg[1] / ~y_size;
-	y_coordinate = y_coordinate.floor;
+	var x_coordinate = msg[1] % ~x_size;
+	var y_coordinate = (msg[1] / ~y_size).floor;
+	var note = (48 + msg[1]).degreeToKey(~scale);
 	if(msg[2] > 0.025, {
 		Synth.new(\pulse, [
-			freq: (~abs_depths[msg[1]]**2) * 20000,
+			freq: note.midicps,
 			pan: 1 - (2 * (msg[1]%~x_size) / ~x_size),
-			amp: 0.025 + (msg[2] / 10),
+			amp: 0.025 + (~abs_depths[msg[1]] / 10),
 			duty: 0.1 + (y_coordinate / 10)
 		]);
-		((~abs_depths[msg[1]]**2) * 20000).postln;
+		note.postln;
 	});
 	//msg.postln;
 }, '/relative');
@@ -83,3 +86,10 @@ OSCdef.new(\ids, {
 )
 
 s.scope
+
+(
+l = [0, 1, 5, 9, 11]; // pentatonic scale
+(1, 2..15).collect{|i|
+    i.degreeToKey(l, 12)
+};
+)

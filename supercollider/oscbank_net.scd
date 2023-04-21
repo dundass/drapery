@@ -47,7 +47,7 @@ SynthDef.new(\pulse, {
 
 ~oscbank = Array.fill(~x_size * ~y_size, {
 	arg i;
-	Synth.new(\pulse, [
+	Synth.new(\tri, [
 		freq: 100 + (i * 2),
 		duty: 0.25
 	]);
