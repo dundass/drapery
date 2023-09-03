@@ -5,7 +5,7 @@ OSCdef.freeAll; // help, purge !!
 
 (  /* SYNTHDEF */
 
-SynthDef.new(\osc, {
+SynthDef.new(\drone_osc, {
 	arg freq=100, pan=0, amp=0.025, out=0;
 	var sig, env;
 	freq = freq.clip(20, 20000);
@@ -16,7 +16,7 @@ SynthDef.new(\osc, {
 	Out.ar(out, sig);
 }).add;
 
-SynthDef.new(\tri, {
+SynthDef.new(\drone_tri, {
 	arg freq=100, pan=0, amp=0.025, duty=0.5, out=0;
 	var sig, env;
 	freq = freq.clip(20, 20000);
@@ -27,7 +27,7 @@ SynthDef.new(\tri, {
 	Out.ar(out, sig);
 }).add;
 
-SynthDef.new(\pulse, {
+SynthDef.new(\drone_pulse, {
 	arg freq=100, pan=0, amp=0.025, duty=0.5, out=0;
 	var sig, env;
 	freq = freq.clip(20, 20000);
@@ -45,9 +45,13 @@ SynthDef.new(\pulse, {
 ~x_size = 8;
 ~y_size = 4;
 
+/*~oscbank.collect({|i|
+	i.free;
+});*/
+
 ~oscbank = Array.fill(~x_size * ~y_size, {
 	arg i;
-	Synth.new(\tri, [
+	Synth.new(\drone_tri, [
 		freq: 100 + (i * 2),
 		duty: 0.25
 	]);

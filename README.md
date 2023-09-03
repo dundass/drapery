@@ -22,3 +22,18 @@ allow the depth feed to influence CA layer(s) which then evolve and elaborate on
 this enables multiple mappings/sound engines to be run from differing but related streams, and altering/toggling these mappings will make it more expressive
 
 the fact that CA must be clocked can give the performances a rhythmic element, unless the clock speed is super high
+
+# ways to play
+
+start with just fan noise and eg a gong
+start with just a sheet drone and no fan
+peg bells onto the sheet to act as anchors and sounds
+move in amongst the sheet
+peg corners of the sheet to things
+make fans oscillate
+ripple the sheet with hands
+wear a long gown
+end with throwing hand sporadically in front of kinect sensor to trigger loud noise
+end with unpegging the sheet
+
+(+ alter mappings and synth params)

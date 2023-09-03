@@ -19,7 +19,7 @@ KinectPV2 kinect;
 int maxD = 4500; // 4.5mx
 int minD = 0;  //  50cm
 
-int maxVerticalSum = 9999999;
+int maxBlockSum = 9999999;
 
 final int x_size = 8;
 final int y_size = 4;  // TODO - y axis expansion !
@@ -47,7 +47,7 @@ void setup() {
 
   kinect.init();
   
-  maxVerticalSum = maxD * (height / y_size) * (width / x_size);
+  maxBlockSum = maxD * (height / y_size) * (width / x_size);
   
   oscP5 = new OscP5(this, receive_port);
   myRemoteLocation = new NetAddress(ip, send_port);
@@ -93,7 +93,7 @@ void draw() {
   
   for(int i = 0; i < sums.length; i++) {
     // calc averages and distances, and send them
-    float newAverage = map((float)sums[i] / maxVerticalSum, 0, 1, 0.05, 0.3);
+    float newAverage = map((float)sums[i] / maxBlockSum, 0, 1, 0.05, 0.3);
     differences[i] = abs(averages[i] - newAverage) * 10;
     averages[i] = newAverage;
     absMessage.add(i);

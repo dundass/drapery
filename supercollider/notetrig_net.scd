@@ -58,7 +58,8 @@ OSCdef.new(\abs, {
 	~abs_depths[msg[1]] = msg[2];
 }, '/absolute');
 
-// delta depth values - trigger the synths
+// delta depth values
+// trigger the synths if over a threshold
 OSCdef.new(\rel, {
 	arg msg, time, addr, port;
 	// msg[1] = index; msg[2] = rel depth
