@@ -65,7 +65,7 @@ SynthDef.new(\pulse, {
 	var sig, env;
 	freq = freq.clip(20, 20000);
 	pan = pan.clip(-1, 1);
-	env = EnvGen.kr(Env.perc(0.1,1), doneAction:2);
+	env = EnvGen.kr(Env.perc(0.1,1.5), doneAction:2);
 	sig = Pulse.ar(freq, duty, amp) * env;
 	sig = Pan2.ar(sig, pan);
 	Out.ar(out, sig);
@@ -122,7 +122,7 @@ OSCdef.new(\rel, {
 		item.set(\duty, 0.25 + msg[i+1]/10);
 		//[i, item].postln;
 	});*/
-	~dronebank[msg[1]].set(\amp, 0.05+(msg[2]/5));
+	~dronebank[msg[1]].set(\amp, 0.04+(msg[2]/5));
 
 	~dronebank[msg[1]].set(\duty, 0.25+(msg[2]/5));
 }, '/relative');
