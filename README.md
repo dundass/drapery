@@ -16,6 +16,7 @@ the sound engine can either be SuperCollider or Pure Data, though the former is 
 - explore crowd participation/installation potential
 - see if cellular automata could be integrated
 - investigate other SynthDefs eg resonators, chime-like, pitched noise
+- see if the sheet movement is still audible if using a looper->filterbank sound engine
 - refactor use of 'clone' PD object to allow porting to Organelle/HVCC devices
 
 # ways to play
@@ -34,6 +35,9 @@ the sound engine can either be SuperCollider or Pure Data, though the former is 
 - end with unpegging the sheet
 - alter mappings and synth params to create long form section changes
 - change alignment of sheet/performer/audience to reveal performer or blow air onto audience
+- draw on the sheet during the set
+- slice the sheet into ribbons
+- kneel down, pause
 
 # cellular automata
 
