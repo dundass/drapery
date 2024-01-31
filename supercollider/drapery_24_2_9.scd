@@ -148,7 +148,7 @@ SynthDef.new(\bell, { |out, freq=200, accent = 0, pan = 0, amp = 0.1, decayScale
 (  /* THE DRONE SYNTHS */
 
 ~x_size = 8;
-~y_size = 4;
+~y_size = 2;
 
 ~dronebank.do({|synth|
 	synth.free;
@@ -161,8 +161,8 @@ SynthDef.new(\bell, { |out, freq=200, accent = 0, pan = 0, amp = 0.1, decayScale
 		res: (i+1)/32
 	]);*/
 	Synth.new(\drone_formant, [
-		freq: 100 + (i * 2),
-		res: 200 + (i * 4)
+		freq: 100 + (i * 20),
+		res: 200 + (i * 40)
 	]);
 });
 
@@ -173,24 +173,22 @@ SynthDef.new(\bell, { |out, freq=200, accent = 0, pan = 0, amp = 0.1, decayScale
 // absolute depth values - set the synth freqs
 OSCdef.new(\abs, {
 	arg msg, time, addr, port;
-	~dronebank[msg[1]].set(\freq, (msg[2]**1.5) * 10000);
-	~dronebank[msg[1]].set(\res, (msg[2]**1.5) * 20000); // for drone_formant only
+	//~dronebank[msg[1]].set(\freq, (msg[2]**2) * 20000);
+	~dronebank[msg[1]].set(\freq, (msg[2]**2) * 6000);// for drone_formant
+	~dronebank[msg[1]].set(\res, (msg[2]**1.25) * 15000); // for drone_formant only
 }, '/absolute');
 
 // delta depth values
 OSCdef.new(\rel, {
 	arg msg, time, addr, port;
 	// for \drone_noise_bpf:
-	//~dronebank[msg[1]].set(\amp, 0.2+(msg[2]*10));
-	//~dronebank[msg[1]].set(\res, msg[2] * 5);
+	/*~dronebank[msg[1]].set(\amp, 0.25+(msg[2]*5));
+	~dronebank[msg[1]].set(\res, 0.25 + (msg[2] * 5));*/
 	// for \drone_formant:
 	~dronebank[msg[1]].set(\amp, 0.05+(msg[2]/5));
 	//~dronebank[msg[1]].set(\res, (msg[2]**1) * 10000); // moved to \abs
 
 	//~dronebank[msg[1]].set(\duty, 0.25+(msg[2]/5)); // for osc, tri, pulse
-	if(msg[1] == 15, {
-
-	});
 }, '/relative');
 
 // index array - set the pan values of the synths
@@ -223,22 +221,23 @@ OSCdef.new(\rel, {
 	var y_coordinate = msg[1] / ~y_size;
 	y_coordinate = y_coordinate.floor;
 	if(msg[2] > 0.025, {
-		/*Synth.new(\osc, [
+		Synth.new(\osc, [
 			//freq: (~abs_depths[msg[1]]**2) * 20000,
-			freq: (~abs_depths[msg[1]]*0.6) * 20000,
+			//freq: (~abs_depths[msg[1]]*0.6) * 20000,
+			freq: (~abs_depths[msg[1]]**0.75) * 20000,
 			pan: 1 - (2 * (msg[1]%~x_size) / ~x_size),
 			amp: 0.025 + (msg[2] / 10),
 			duty: 0.1 + (y_coordinate / 10)
 		]);
-		((~abs_depths[msg[1]]*0.6) * 20000).postln;*/
-		Synth.new(\bell, [
+		((~abs_depths[msg[1]]**0.8) * 20000).postln;
+		/*Synth.new(\bell, [
 			//freq: (~abs_depths[msg[1]]**2) * 20000,
 			freq: (~abs_depths[msg[1]]*0.075) * 10000,
 			pan: 1 - (2 * (msg[1]%~x_size) / ~x_size),
 			amp: 0.025 + (msg[2] / 10),
 			decayScale: 0.1 + (y_coordinate * 2)
 		]);
-		((~abs_depths[msg[1]]*0.075) * 10000).postln;
+		((~abs_depths[msg[1]]*0.075) * 10000).postln;*/
 		/*Synth.new(\fmbell, [
 			//freq: (~abs_depths[msg[1]]**2) * 20000,
 			freq: (~abs_depths[msg[1]]*0.2) * 8000,
@@ -304,5 +303,9 @@ OSCdef.new(\ids, {
 	arg msg, time, addr, port;
 	msg.postln;
 }, '/ids');
+
+//OSCdef.new(\ids1, {}, '/ids');
+//OSCdef.new(\abs1, {}, '/absolute');
+//OSCdef.new(\rel1, {}, '/relative');
 
 )

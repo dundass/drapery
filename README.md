@@ -21,7 +21,7 @@ the sound engine can either be SuperCollider or Pure Data, though the former is 
 
 # ways to play
 
-- start with just fan noise and eg a gong
+- start with just fan noise and eg a whistle
 - start with just a sheet drone and no fan
 - start with pegging the sheet up
 - peg bells onto the sheet to act as anchors and sounds
@@ -34,10 +34,13 @@ the sound engine can either be SuperCollider or Pure Data, though the former is 
 - end with throwing hand sporadically in front of kinect sensor to trigger loud noise bursts
 - end with unpegging the sheet
 - alter mappings and synth params to create long form section changes
+- overlap mappings, multiple synths at once
 - change alignment of sheet/performer/audience to reveal performer or blow air onto audience
 - draw on the sheet during the set
 - slice the sheet into ribbons
 - kneel down, pause
+- blow onto the sheet before/after fans
+- use hairdryer/air duster
 
 # cellular automata
 
