@@ -145,10 +145,10 @@ SynthDef.new(\bell, { |out, freq=200, accent = 0, pan = 0, amp = 0.1, decayScale
 
 )
 
-(  /* THE DRONE SYNTHS */
+(  /* WIND DRONE */
 
 ~x_size = 8;
-~y_size = 2;
+~y_size = 4;
 
 ~dronebank.do({|synth|
 	synth.free;
@@ -156,43 +156,26 @@ SynthDef.new(\bell, { |out, freq=200, accent = 0, pan = 0, amp = 0.1, decayScale
 
 ~dronebank = Array.fill(~x_size * ~y_size, {
 	arg i;
-	/*Synth.new(\drone_noise_bpf, [
+	Synth.new(\drone_noise_bpf, [
 		freq: 100 + (i * 2),
 		res: (i+1)/32
-	]);*/
-	Synth.new(\drone_formant, [
-		freq: 100 + (i * 20),
-		res: 200 + (i * 40)
 	]);
 });
 
-)
-
-(  /* OSC LISTENERS - DRONES */
-
-// absolute depth values - set the synth freqs
-OSCdef.new(\abs, {
+OSCdef.new(\abs_drone, { // absolute depth values - set the synth freqs
 	arg msg, time, addr, port;
-	//~dronebank[msg[1]].set(\freq, (msg[2]**2) * 20000);
-	~dronebank[msg[1]].set(\freq, (msg[2]**2) * 6000);// for drone_formant
-	~dronebank[msg[1]].set(\res, (msg[2]**1.25) * 15000); // for drone_formant only
+	~dronebank[msg[1]].set(\freq, (msg[2]**2) * 20000);
 }, '/absolute');
 
-// delta depth values
-OSCdef.new(\rel, {
+OSCdef.new(\rel_drone, { // delta depth values
 	arg msg, time, addr, port;
 	// for \drone_noise_bpf:
-	/*~dronebank[msg[1]].set(\amp, 0.25+(msg[2]*5));
-	~dronebank[msg[1]].set(\res, 0.25 + (msg[2] * 5));*/
-	// for \drone_formant:
-	~dronebank[msg[1]].set(\amp, 0.05+(msg[2]/5));
-	//~dronebank[msg[1]].set(\res, (msg[2]**1) * 10000); // moved to \abs
-
+	~dronebank[msg[1]].set(\amp, 0.5+(msg[2]*2));
+	~dronebank[msg[1]].set(\res, 0.25 + (msg[2] * 3));
 	//~dronebank[msg[1]].set(\duty, 0.25+(msg[2]/5)); // for osc, tri, pulse
 }, '/relative');
 
-// index array - set the pan values of the synths
-OSCdef.new(\ids, {
+OSCdef.new(\ids_drone, { // index array - set the pan values of the synths
 	arg msg, time, addr, port;
 	msg.postln;
 	~dronebank[msg[1]].set(\pan, 1 - (2 * msg[1]%~x_size));
@@ -200,22 +183,63 @@ OSCdef.new(\ids, {
 
 )
 
-(  /* OSC LISTENERS - ATONAL TRIG */
+(  /* DIGITAL DRONE */
+
+~x_size = 8;
+~y_size = 4;
 
 ~dronebank.do({|synth|
 	synth.free;
-	//synth.set(\amp, 0);
 });
 
-// absolute depth values - save for trig later
-OSCdef.new(\abs, {
+~dronebank = Array.fill(~x_size * ~y_size, {
+	arg i;
+	Synth.new(\drone_formant, [
+		freq: 100 + (i * 20),
+		res: 200 + (i * 40)
+	]);
+});
+
+OSCdef.new(\abs_drone, { // absolute depth values - set the synth freqs
+	arg msg, time, addr, port;
+	~dronebank[msg[1]].set(\freq, (msg[2]**2) * 6000);
+	~dronebank[msg[1]].set(\res, (msg[2]**1.25) * 15000);
+}, '/absolute');
+
+OSCdef.new(\rel_drone, { // delta depth values
+	arg msg, time, addr, port;
+	~dronebank[msg[1]].set(\amp, 0.05+(msg[2]/5));
+	//~dronebank[msg[1]].set(\res, (msg[2]**1) * 10000); // moved to \abs
+
+	//~dronebank[msg[1]].set(\duty, 0.25+(msg[2]/5)); // for osc, tri, pulse
+}, '/relative');
+
+OSCdef.new(\ids_drone, { // index array - set the pan values of the synths
+	arg msg, time, addr, port;
+	msg.postln;
+	~dronebank[msg[1]].set(\pan, 1 - (2 * msg[1]%~x_size));
+}, '/ids');
+
+)
+
+(  /* KILL DRONES */
+~dronebank.do({|synth|
+	synth.free;
+});
+OSCdef.new(\abs_drone, {}, '/absolute');
+OSCdef.new(\rel_drone, {}, '/relative');
+OSCdef.new(\ids_drone, {}, '/ids');
+)
+
+(  /* GLASS TRIG */
+
+OSCdef.new(\abs, { // absolute depth values - save for trig later
 	arg msg, time, addr, port;
 	// msg[1] = index; msg[2] = abs depth
 	~abs_depths[msg[1]] = msg[2];
 }, '/absolute');
 
-// delta depth values - trigger the synths
-OSCdef.new(\rel, {
+OSCdef.new(\rel, { // delta depth values - trigger the synths
 	arg msg, time, addr, port;
 	// msg[1] = index; msg[2] = rel depth
 	var y_coordinate = msg[1] / ~y_size;
@@ -258,12 +282,7 @@ OSCdef.new(\ids, {
 
 )
 
-(  /* OSC LISTENERS - NOTE TRIG */
-
-~dronebank.do({|synth|
-	synth.free;
-	//synth.set(\amp, 0);
-});
+(  /* BELL TRIG */
 
 ~scale = [0,2,3,7,8,12,14,15];
 //~scale = [0,1,3,4,6,7,9,11,12];
@@ -271,16 +290,13 @@ OSCdef.new(\ids, {
 //~noffset = 36;
 ~noffset = 24;
 
-// absolute depth values - save for trig later
-OSCdef.new(\abs, {
+OSCdef.new(\abs, { // absolute depth values - save for trig later
 	arg msg, time, addr, port;
 	// msg[1] = index; msg[2] = abs depth
 	~abs_depths[msg[1]] = msg[2];
 }, '/absolute');
 
-// delta depth values
-// trigger the synths if over a threshold
-OSCdef.new(\rel, {
+OSCdef.new(\rel, { // delta depth values - trigger the synths if > threshold
 	arg msg, time, addr, port;
 	// msg[1] = index; msg[2] = rel depth
 	var x_coordinate = msg[1] % ~x_size;
@@ -303,9 +319,5 @@ OSCdef.new(\ids, {
 	arg msg, time, addr, port;
 	msg.postln;
 }, '/ids');
-
-//OSCdef.new(\ids1, {}, '/ids');
-//OSCdef.new(\abs1, {}, '/absolute');
-//OSCdef.new(\rel1, {}, '/relative');
 
 )

@@ -22,7 +22,7 @@ int minD = 0;  //  50cm
 int maxBlockSum = 9999999;
 
 final int x_size = 8;
-final int y_size = 4;  // TODO - y axis expansion !
+final int y_size = 3;  // TODO - y axis expansion !
 final String ip = "127.0.0.1";
 //final int send_port = 3001; // pure data
 final int send_port = 57120;  // supercollider
@@ -78,6 +78,8 @@ void draw() {
   // do the sums
   int sumsIdx = 0, dataIdx = 0;
   int block_x_size = width / x_size, block_y_size = height / y_size;
+  
+  println(block_y_size);
   
   for(int y = 0; y < height; y++) {
     for(int x = 0; x < width; x++) {
