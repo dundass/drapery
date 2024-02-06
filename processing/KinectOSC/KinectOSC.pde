@@ -22,7 +22,7 @@ int minD = 0;  //  50cm
 int maxBlockSum = 9999999;
 
 final int x_size = 8;
-final int y_size = 3;  // TODO - y axis expansion !
+final int y_size = 4;  // TODO - y axis expansion !
 final String ip = "127.0.0.1";
 //final int send_port = 3001; // pure data
 final int send_port = 57120;  // supercollider
