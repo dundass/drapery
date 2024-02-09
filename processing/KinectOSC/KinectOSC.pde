@@ -79,7 +79,7 @@ void draw() {
   int sumsIdx = 0, dataIdx = 0;
   int block_x_size = width / x_size, block_y_size = height / y_size;
   
-  println(block_y_size);
+  //println(block_y_size);
   
   for(int y = 0; y < height; y++) {
     for(int x = 0; x < width; x++) {

@@ -62,21 +62,29 @@ SynthDef.new(\drone_fuzz, {
 SynthDef.new(\drone_formant, {
 	arg freq=100, pan=0, amp=0.025, res=400, out=0;
 	var sig;
-	freq = freq.clip(20, 1000);
+	freq = freq.clip(20, 2000);
 	res = res.clip(20, 20000);
-	sig = Formant.ar(freq, res, 1000, amp);
+	sig = Formant.ar(freq, res, 2000, amp);
+	sig = Pan2.ar(sig, pan);
+	Out.ar(out, sig);
+}).add;
+
+SynthDef.new(\drone_noisering, {
+	arg freq=100, pan=0, amp=0.025, res=0.5, out=0;
+	// i have no idea how to pitch this lol
+	var sig;
+	res = res.clip(0,1);
+	sig = Demand.ar(Impulse.ar(5000), 0, DNoiseRing(change: res, chance: 0.51, numBits: 32)) * (2**32).reciprocal;
 	sig = Pan2.ar(sig, pan);
 	Out.ar(out, sig);
 }).add;
 
 // trigs
 
-// Klank !
-
-SynthDef(\fmbell, { arg out=0, amp=0.1, pan=0, freq=200, decayScale=1;
+SynthDef(\fmbell, { arg out=0, amp=0.1, pan=0, freq=200, decay=1;
 	var sig;
 	var sig1, sig2, sig3, sig4, sig5, sig6;
-	freq = freq * EnvGen.kr(Env([1,1.002,0.998,1],[0.1,0.8]), 1, timeScale:decayScale);
+	freq = freq * EnvGen.kr(Env([1,1.002,0.998,1],[0.1,0.8]), 1, timeScale:decay);
 	sig1 = SinOsc.ar(freq * 2.6706 + 0.13) * 2 + 1;
 	sig2 = SinOsc.ar(freq * 0.9998 * sig1);
 	sig3 = SinOsc.ar(freq * 2.6629 * sig1 + 2.04);
@@ -95,7 +103,7 @@ SynthDef.new(\osc, {
 	var sig, env;
 	freq = freq.clip(20, 20000);
 	pan = pan.clip(-1, 1);
-	env = EnvGen.kr(Env.perc(0.1,2), doneAction:2);
+	env = EnvGen.kr(Env.perc(0.1,decay), doneAction:2);
 	sig = SinOsc.ar(freq, duty, amp) * env;
 	sig = Pan2.ar(sig, pan);
 	Out.ar(out, sig);
@@ -113,27 +121,39 @@ SynthDef.new(\tri, {
 }).add;
 
 SynthDef.new(\pulse, {
-	arg freq=100, pan=0, amp=0.05, duty=0.5, out=0;
+	arg freq=100, pan=0, amp=0.05, duty=0.5, decay=1.5, out=0;
 	var sig, env;
 	freq = freq.clip(20, 20000);
 	pan = pan.clip(-1, 1);
-	env = EnvGen.kr(Env.perc(0.1,1.5), doneAction:2);
+	env = EnvGen.kr(Env.perc(0.1,decay), doneAction:2);
 	sig = Pulse.ar(freq, duty, amp) * env;
 	sig = Pan2.ar(sig, pan);
 	Out.ar(out, sig);
 }).add;
 
-SynthDef.new(\bell, { |out, freq=200, accent = 0, pan = 0, amp = 0.1, decayScale = 2|
+SynthDef.new(\bell, { |out, freq=200, accent=0, pan=0, amp=0.1, decay=2|
     var exc = PinkNoise.ar(amp)
     * Decay2.kr(Impulse.kr(0), 0.01, 0.05),
     sig = Klank.ar(`[
 		[freq, ExpRand(freq*2, freq*4), ExpRand(freq*2, freq*4)],
 		[1,0.5,0.5],
         { ExpRand(0.1, 0.4) } ! 3
-    ], exc, freqscale: accent + 1, decayscale: decayScale);
+    ], exc, freqscale: accent + 1, decayscale: decay);
     DetectSilence.ar(sig, doneAction: Done.freeSelf);
 	sig = Pan2.ar(sig, pan);
     Out.ar(out, sig);
+}).add;
+
+SynthDef.new(\ring, {
+	arg freq=100, pan=0, amp=0.05, duty=0, decay=2, out=0;
+	var sig, env;
+	freq = freq.clip(20, 20000);
+	pan = pan.clip(-1, 1);
+	env = EnvGen.ar(Env.perc(0.1,decay,amp*5), doneAction:2);
+	sig = Ringz.ar(env, freq, decay);
+	sig = HPF.ar(sig, freq);
+	sig = Pan2.ar(sig, pan);
+	Out.ar(out, sig);
 }).add;
 
 /* THE TRIG SYNTH FREQUENCY ARRAY */
@@ -244,7 +264,7 @@ OSCdef.new(\rel, { // delta depth values - trigger the synths
 	var y_coordinate = msg[1] / ~y_size;
 	y_coordinate = y_coordinate.floor;
 	if(msg[2] > 0.025, {
-		var freq = (~abs_depths[msg[1]]*1.75) * 20000;
+		/*var freq = (~abs_depths[msg[1]]*1.75) * 20000;
 		Synth.new(\tri, [
 			//freq: (~abs_depths[msg[1]]**2) * 20000,
 			//freq: (~abs_depths[msg[1]]*0.6) * 20000,
@@ -253,24 +273,32 @@ OSCdef.new(\rel, { // delta depth values - trigger the synths
 			pan: 1 - (2 * (msg[1]%~x_size) / ~x_size),
 			amp: 0.025 + (msg[2] / 10),
 			duty: 0.1 + (y_coordinate / 10)
-		]);
-		freq.postln;
-		/*Synth.new(\bell, [
-			//freq: (~abs_depths[msg[1]]**2) * 20000,
-			freq: (~abs_depths[msg[1]]*0.075) * 10000,
+		]);*/
+		/*var freq = (~abs_depths[msg[1]]*1.75) * 20000;
+		Synth.new(\ring, [
+			freq: freq,
+			pan: 1 - (2 * (msg[1]%~x_size) / ~x_size),
+			amp: 0.25 + (msg[2] * 10),
+			decay: 0.1 + (y_coordinate * 1)
+		]);*/
+		//var freq = (~abs_depths[msg[1]]**2) * 20000;
+		//var freq = (~abs_depths[msg[1]]*0.075) * 10000;
+		var freq = (~abs_depths[msg[1]]*1.75) * 20000;
+		Synth.new(\bell, [
+			freq: freq,
 			pan: 1 - (2 * (msg[1]%~x_size) / ~x_size),
 			amp: 0.025 + (msg[2] / 10),
-			decayScale: 0.1 + (y_coordinate * 2)
+			decay: 0.1 + (y_coordinate * 2)
 		]);
-		((~abs_depths[msg[1]]*0.075) * 10000).postln;*/
-		/*Synth.new(\fmbell, [
-			//freq: (~abs_depths[msg[1]]**2) * 20000,
-			freq: (~abs_depths[msg[1]]*0.2) * 8000,
+		/*var freq = (~abs_depths[msg[1]]*0.2) * 8000;
+		//var freq = (~abs_depths[msg[1]]**2) * 20000;
+		Synth.new(\fmbell, [
+			freq: freq,
 			pan: 1 - (2 * (msg[1]%~x_size) / ~x_size),
 			amp: 0.025 + (msg[2] / 10),
-			decayScale: 0.1 + (y_coordinate * 2)
-		]);
-		((~abs_depths[msg[1]]*0.2) * 8000).postln;*/
+			decay: 0.1 + (y_coordinate * 2)
+		]);*/
+		msg[2].postln;
 	});
 	//msg.postln;
 }, '/relative');
@@ -307,7 +335,7 @@ OSCdef.new(\rel, { // delta depth values - trigger the synths if > threshold
 			freq: note.midicps,
 			pan: 1 - (2 * (msg[1]%~x_size) / ~x_size),
 			amp: 0.025 + (~abs_depths[msg[1]] / 10),
-			decayScale: 0.1 + (y_coordinate * 2)
+			decay: 0.1 + (y_coordinate * 2)
 		]);
 		note.postln;
 	});
