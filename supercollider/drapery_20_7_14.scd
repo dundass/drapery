@@ -12,7 +12,6 @@ SynthDef.new(\drone_osc, {
 	var sig, env;
 	freq = freq.clip(20, 20000);
 	pan = pan.clip(-1, 1);
-	//env = EnvGen.kr(Env.perc(0.01,1), doneAction:2); // sig = osc * env
 	sig = SinOsc.ar(freq, 0, amp);
 	sig = Pan2.ar(sig, pan);
 	Out.ar(out, sig);
@@ -23,7 +22,6 @@ SynthDef.new(\drone_tri, {
 	var sig, env;
 	freq = freq.clip(20, 20000);
 	pan = pan.clip(-1, 1);
-	//env = EnvGen.kr(Env.perc(0.01,1), doneAction:2); // sig = osc * env
 	sig = VarSaw.ar(freq, 0, 0.5, amp);
 	sig = Pan2.ar(sig, pan);
 	Out.ar(out, sig);
@@ -34,7 +32,6 @@ SynthDef.new(\drone_pulse, {
 	var sig, env;
 	freq = freq.clip(20, 20000);
 	pan = pan.clip(-1, 1);
-	//env = EnvGen.kr(Env.perc(0.1,1), doneAction:2); // sig = osc * env
 	sig = Pulse.ar(freq, duty, amp);
 	sig = Pan2.ar(sig, pan);
 	Out.ar(out, sig);
@@ -98,7 +95,7 @@ SynthDef(\fmbell, { arg out=0, amp=0.1, pan=0, freq=200, decay=1;
 	sig1 = SinOsc.ar(freq * 2.6706 + 0.13) * 2 + 1;
 	sig2 = SinOsc.ar(freq * 0.9998 * sig1);
 	sig3 = SinOsc.ar(freq * 2.6629 * sig1 + 2.04);
-	//sig4 = SinOsc.ar(freq * 0.9991 * sig1 + 2.14);
+	//sig4 = SinOsc.ar(freq * 0.9991 * sig1 + 2.14);  // too much cpu usage
 	//sig = sig2 + sig3 + sig4;
 	sig = [sig1, sig2, sig3] * DC.ar([0,0.5,0.5]);
 	//sig.debug("sig");
@@ -166,16 +163,83 @@ SynthDef.new(\ring, {
 	Out.ar(out, sig);
 }).add;
 
+SynthDef.new(\burst, {
+	arg freq=100, pan=0, amp=0.5, duty=1, decay=1, out=0;
+	var sig, env;
+	freq = freq.clip(20, 20000);
+	pan = pan.clip(-1, 1);
+	env = EnvGen.kr(Env.step([1, 0], [decay, 0]), doneAction:2);
+	sig = PinkNoise.ar(amp) * env;
+	sig = BPF.ar(sig, freq, duty);
+	sig = Pan2.ar(sig, pan);
+	Out.ar(out, sig);
+}).add;
+
 /* THE TRIG SYNTH FREQUENCY ARRAY */
 
 ~x_size = 8;
 ~y_size = 4;
 
 ~abs_depths = Array.fill(~x_size * ~y_size, { 0.0 });
+~target_depths = Array.fill(~x_size * ~y_size, { 0.0 });
+~sliding_depths = Array.fill(~x_size * ~y_size, { 0.0 });
+
+/* EASING FUNCTION */
+
+~ease = {
+	arg value, target, easing;
+	var dval = target - value;
+	if(dval.abs > 0.01, {
+		value = value + (dval * easing);
+	});
+	value;
+};
 
 )
 
-(  /* WIND DRONE */
+(  /* TONAL TRI DRONE */
+
+~x_size = 8;
+~y_size = 4;
+
+~dronescale = [16,14,12,11,9,7,5,4,2,0];
+~droneoffset = 42;
+
+~dronebank.do({|synth|
+	synth.free;
+});
+
+~dronebank = Array.fill(~x_size * ~y_size, {
+	arg i;
+	Synth.new(\drone_tri, [
+		freq: 100 + (i * 20),
+		duty: (i * 40) / 40
+	]);
+});
+
+OSCdef.new(\abs_drone, { // absolute depth values - set the synth freqs
+	arg msg, time, addr, port;
+	var note = (~droneoffset + (msg[2] * 20)).degreeToKey(~dronescale);
+	~target_depths[msg[1]] = note.midicps;
+	~sliding_depths[msg[1]] = ~ease.value(~sliding_depths[msg[1]], ~target_depths[msg[1]], 0.1);
+	~dronebank[msg[1]].set(\freq, ~sliding_depths[msg[1]]);
+}, '/absolute');
+
+OSCdef.new(\rel_drone, { // delta depth values
+	arg msg, time, addr, port;
+	~dronebank[msg[1]].set(\amp, 0.08+(msg[2]/5));
+	~dronebank[msg[1]].set(\duty, 0.4+(msg[2]/10)); // for osc, tri, pulse
+}, '/relative');
+
+OSCdef.new(\ids_drone, { // index array - set the pan values of the synths
+	arg msg, time, addr, port;
+	msg.postln;
+	~dronebank[msg[1]].set(\pan, 1 - (2 * msg[1]%~x_size));
+}, '/ids');
+
+)
+
+(  /* NOISE WIND DRONE */
 
 ~x_size = 8;
 ~y_size = 4;
@@ -200,7 +264,7 @@ OSCdef.new(\abs_drone, { // absolute depth values - set the synth freqs
 OSCdef.new(\rel_drone, { // delta depth values
 	arg msg, time, addr, port;
 	// for \drone_noise_bpf:
-	~dronebank[msg[1]].set(\amp, 0.015 + (msg[2] * 2));
+	~dronebank[msg[1]].set(\amp, 0.075 + (msg[2] * 5));
 	~dronebank[msg[1]].set(\res, 0.25 + (msg[2] * 1));
 	//~dronebank[msg[1]].set(\duty, 0.25+(msg[2]/5)); // for osc, tri, pulse
 }, '/relative');
@@ -213,7 +277,7 @@ OSCdef.new(\ids_drone, { // index array - set the pan values of the synths
 
 )
 
-(  /* FORMANT DRONE */
+(  /* ATONAL FORMANT DRONE */
 
 ~x_size = 8;
 ~y_size = 4;
@@ -238,7 +302,7 @@ OSCdef.new(\abs_drone, { // absolute depth values - set the synth freqs
 
 OSCdef.new(\rel_drone, { // delta depth values
 	arg msg, time, addr, port;
-	~dronebank[msg[1]].set(\amp, 0.1+(msg[2]/5));
+	~dronebank[msg[1]].set(\amp, 0.05+(msg[2]/5));
 	//~dronebank[msg[1]].set(\res, (msg[2]**1) * 10000); // moved to \abs
 
 	//~dronebank[msg[1]].set(\duty, 0.25+(msg[2]/5)); // for osc, tri, pulse
@@ -252,7 +316,7 @@ OSCdef.new(\ids_drone, { // index array - set the pan values of the synths
 
 )
 
-(  /* PULSE DRONE */
+(  /* ATONAL PULSE DRONE */
 
 ~x_size = 8;
 ~y_size = 4;
@@ -271,7 +335,7 @@ OSCdef.new(\ids_drone, { // index array - set the pan values of the synths
 
 OSCdef.new(\abs_drone, { // absolute depth values - set the synth freqs
 	arg msg, time, addr, port;
-	~dronebank[msg[1]].set(\freq, (msg[2]**2) * 7000);
+	~dronebank[msg[1]].set(\freq, (msg[2]**1.5) * 3000);
 }, '/absolute');
 
 OSCdef.new(\rel_drone, { // delta depth values
@@ -303,7 +367,10 @@ OSCdef.new(\rel, {}, '/relative');
 OSCdef.new(\ids, {}, '/ids');
 )
 
-(  /* GLASS TRIG */
+(  /* TONAL PULSE TRIG */
+
+~scale = [0,2,4,5,7,9,11,12,14,16];
+~noffset = 60;
 
 OSCdef.new(\abs, { // absolute depth values - save for trig later
 	arg msg, time, addr, port;
@@ -313,44 +380,17 @@ OSCdef.new(\abs, { // absolute depth values - save for trig later
 OSCdef.new(\rel, { // delta depth values - trigger the synths
 	arg msg, time, addr, port;
 	// msg[1] = index; msg[2] = rel depth
-	var y_coordinate = msg[1] / ~y_size;
-	y_coordinate = y_coordinate.floor;
-	if(msg[2] > 0.025, {
-		/*var freq = (~abs_depths[msg[1]]*1.75) * 20000;
-		Synth.new(\tri, [
-			//freq: (~abs_depths[msg[1]]**2) * 20000,
-			//freq: (~abs_depths[msg[1]]*0.6) * 20000,
-			freq: freq,
-			//freq: (~abs_depths[msg[1]]**0.75) * 20000,
+	var x_coordinate = msg[1] % ~x_size;
+	var y_coordinate = (msg[1] / ~y_size).floor;
+	var note = (~noffset + msg[1]).degreeToKey(~scale);
+	if(msg[2] > 0.035, {
+		Synth.new(\pulse, [
+			freq: note.midicps,
 			pan: 1 - (2 * (msg[1]%~x_size) / ~x_size),
-			amp: 0.025 + (msg[2] / 10),
-			duty: 0.1 + (y_coordinate / 10)
-		]);*/
-		/*var freq = (~abs_depths[msg[1]]*1.75) * 20000;
-		Synth.new(\ring, [
-			freq: freq,
-			pan: 1 - (2 * (msg[1]%~x_size) / ~x_size),
-			amp: 0.25 + (msg[2] * 10),
-			decay: 0.1 + (y_coordinate * 1)
-		]);*/
-		//var freq = (~abs_depths[msg[1]]**2) * 20000;
-		//var freq = (~abs_depths[msg[1]]*0.075) * 10000;
-		var freq = (~abs_depths[msg[1]]*1.75) * 20000;
-		Synth.new(\bell, [
-			freq: freq,
-			pan: 1 - (2 * (msg[1]%~x_size) / ~x_size),
-			amp: 0.025 + (msg[2] / 10),
-			decay: 0.1 + (y_coordinate * 2)
+			amp: 0.05 + (~abs_depths[msg[1]] / 10),
+			decay: 0.1 + (y_coordinate/2)
 		]);
-		/*var freq = (~abs_depths[msg[1]]*0.2) * 8000;
-		//var freq = (~abs_depths[msg[1]]**2) * 20000;
-		Synth.new(\fmbell, [
-			freq: freq,
-			pan: 1 - (2 * (msg[1]%~x_size) / ~x_size),
-			amp: 0.025 + (msg[2] / 10),
-			decay: 0.1 + (y_coordinate * 2)
-		]);*/
-		msg[2].postln;
+		note.postln;
 	});
 	//msg.postln;
 }, '/relative');
@@ -362,15 +402,12 @@ OSCdef.new(\ids, { // index array - sent as part of init
 
 )
 
-(  /* BELL TRIG */
+(  /* TONAL BELL TRIG */
 
-//~scale = [0,1,12,13];
-~scale = [0,2,3,7,8,12];
-//~scale = [0,2,3,7,8,12,14,15];
-//~scale = [0,1,3,4,6,7,9,11,12];
+~scale = [0,2,3,7,8,12,15];
 //~noffset = 48;
 //~noffset = 36;
-~noffset = 12;
+~noffset = 48;
 
 OSCdef.new(\abs, { // absolute depth values - save for trig later
 	arg msg, time, addr, port;
@@ -382,14 +419,76 @@ OSCdef.new(\rel, { // delta depth values - trigger the synths if > threshold
 	var x_coordinate = msg[1] % ~x_size;
 	var y_coordinate = (msg[1] / ~y_size).floor;
 	var note = (~noffset + msg[1]).degreeToKey(~scale);
-	if(msg[2] > 0.03, {
+	if(msg[2] > 0.05, {
 		Synth.new(\bell, [
 			freq: note.midicps,
 			pan: 1 - (2 * (msg[1]%~x_size) / ~x_size),
-			amp: 0.001 + (~abs_depths[msg[1]] / 10),
+			amp: 0.1 + (~abs_depths[msg[1]] / 10),
 			decay: 0.1 + (y_coordinate * 2)
 		]);
 		note.postln;
+	});
+	//msg.postln;
+}, '/relative');
+
+OSCdef.new(\ids, { // index array - sent as part of init
+	arg msg, time, addr, port;
+	msg.postln;
+}, '/ids');
+
+)
+
+(  /* ATONAL PULSE TRIG */
+
+OSCdef.new(\abs, { // absolute depth values - save for trig later
+	arg msg, time, addr, port;
+	~abs_depths[msg[1]] = msg[2]; // msg[1] = index; msg[2] = abs depth
+}, '/absolute');
+
+OSCdef.new(\rel, { // delta depth values - trigger the synths
+	arg msg, time, addr, port;
+	// msg[1] = index; msg[2] = rel depth
+	var y_coordinate = (msg[1] / ~y_size).floor;
+	if(msg[2] > 0.045, {
+		var freq = 100+((~abs_depths[msg[1]]**2) * 8000);
+		Synth.new(\pulse, [
+			freq: freq,
+			pan: 1 - (2 * (msg[1]%~x_size) / ~x_size),
+			amp: 0.01+ (msg[2] / 10),
+			duty: 0.1 + (y_coordinate / 10)
+		]);
+		freq.postln;
+	});
+}, '/relative');
+
+OSCdef.new(\ids, { // index array - sent as part of init
+	arg msg, time, addr, port;
+	msg.postln;
+}, '/ids');
+
+)
+
+(  /* NOISE BURST TRIG */
+
+OSCdef.new(\abs, { // absolute depth values - save for trig later
+	arg msg, time, addr, port;
+	~abs_depths[msg[1]] = msg[2]; // msg[1] = index; msg[2] = abs depth
+}, '/absolute');
+
+OSCdef.new(\rel, { // delta depth values - trigger the synths
+	arg msg, time, addr, port;
+	// msg[1] = index; msg[2] = rel depth
+	var y_coordinate = (msg[1] / ~y_size).floor;
+	if(msg[2] > 0.04, {
+		var freq = 30 + (y_coordinate * 1);
+		var decay = 0.01 + (~abs_depths[msg[1]] * 2);
+		Synth.new(\burst, [
+			freq: freq,
+			pan: 1 - (2 * (msg[1]%~x_size) / ~x_size),
+			amp: 0.4+ (msg[2] / 10),
+			decay: decay
+		]);
+		msg[2].postln;
 	});
 	//msg.postln;
 }, '/relative');

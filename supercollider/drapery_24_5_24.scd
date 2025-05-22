@@ -166,6 +166,18 @@ SynthDef.new(\ring, {
 	Out.ar(out, sig);
 }).add;
 
+SynthDef.new(\burst, {
+	arg freq=100, pan=0, amp=0.5, duty=1, decay=1, out=0;
+	var sig, env;
+	freq = freq.clip(20, 20000);
+	pan = pan.clip(-1, 1);
+	env = EnvGen.kr(Env.step([1, 0], [decay, 0]), doneAction:2);
+	sig = PinkNoise.ar(amp) * env;
+	sig = BPF.ar(sig, freq, duty);
+	sig = Pan2.ar(sig, pan);
+	Out.ar(out, sig);
+}).add;
+
 /* THE TRIG SYNTH FREQUENCY ARRAY */
 
 ~x_size = 8;
@@ -200,7 +212,7 @@ OSCdef.new(\abs_drone, { // absolute depth values - set the synth freqs
 OSCdef.new(\rel_drone, { // delta depth values
 	arg msg, time, addr, port;
 	// for \drone_noise_bpf:
-	~dronebank[msg[1]].set(\amp, 0.015 + (msg[2] * 2));
+	~dronebank[msg[1]].set(\amp, 0.0 + (msg[2] * 5));
 	~dronebank[msg[1]].set(\res, 0.25 + (msg[2] * 1));
 	//~dronebank[msg[1]].set(\duty, 0.25+(msg[2]/5)); // for osc, tri, pulse
 }, '/relative');
@@ -271,13 +283,49 @@ OSCdef.new(\ids_drone, { // index array - set the pan values of the synths
 
 OSCdef.new(\abs_drone, { // absolute depth values - set the synth freqs
 	arg msg, time, addr, port;
-	~dronebank[msg[1]].set(\freq, (msg[2]**2) * 7000);
+	~dronebank[msg[1]].set(\freq, (msg[2]**2) * 25000);
 }, '/absolute');
 
 OSCdef.new(\rel_drone, { // delta depth values
 	arg msg, time, addr, port;
-	~dronebank[msg[1]].set(\amp, 0.00+(msg[2]/5));
+	~dronebank[msg[1]].set(\amp, 0.16+(msg[2]/5));
 	~dronebank[msg[1]].set(\duty, 0.2+(msg[2]/2)); // for osc, tri, pulse
+}, '/relative');
+
+OSCdef.new(\ids_drone, { // index array - set the pan values of the synths
+	arg msg, time, addr, port;
+	msg.postln;
+	~dronebank[msg[1]].set(\pan, 1 - (2 * msg[1]%~x_size));
+}, '/ids');
+
+)
+
+(  /* TRI DRONE */
+
+~x_size = 8;
+~y_size = 4;
+
+~dronebank.do({|synth|
+	synth.free;
+});
+
+~dronebank = Array.fill(~x_size * ~y_size, {
+	arg i;
+	Synth.new(\drone_tri, [
+		freq: 100 + (i * 20),
+		duty: (i * 40) / 40
+	]);
+});
+
+OSCdef.new(\abs_drone, { // absolute depth values - set the synth freqs
+	arg msg, time, addr, port;
+	~dronebank[msg[1]].set(\freq, (msg[2]**2) * 10000);
+}, '/absolute');
+
+OSCdef.new(\rel_drone, { // delta depth values
+	arg msg, time, addr, port;
+	~dronebank[msg[1]].set(\amp, 0.05+(msg[2]/5));
+	~dronebank[msg[1]].set(\duty, 0.4+(msg[2]/10)); // for osc, tri, pulse
 }, '/relative');
 
 OSCdef.new(\ids_drone, { // index array - set the pan values of the synths
@@ -303,6 +351,40 @@ OSCdef.new(\rel, {}, '/relative');
 OSCdef.new(\ids, {}, '/ids');
 )
 
+
+(  /* BURST TRIG */
+
+OSCdef.new(\abs, { // absolute depth values - save for trig later
+	arg msg, time, addr, port;
+	~abs_depths[msg[1]] = msg[2]; // msg[1] = index; msg[2] = abs depth
+}, '/absolute');
+
+OSCdef.new(\rel, { // delta depth values - trigger the synths
+	arg msg, time, addr, port;
+	// msg[1] = index; msg[2] = rel depth
+	var y_coordinate = msg[1] / ~y_size;
+	y_coordinate = y_coordinate.floor;
+	if(msg[2] > 0.04, {
+		var freq = 30 + (y_coordinate * 500);
+		var decay = 0.1 + (~abs_depths[msg[1]] * 2);
+		Synth.new(\burst, [
+			freq: freq,
+			pan: 1 - (2 * (msg[1]%~x_size) / ~x_size),
+			amp: 0.3 + (msg[2] / 10),
+			decay: decay
+		]);
+		msg[2].postln;
+	});
+	//msg.postln;
+}, '/relative');
+
+OSCdef.new(\ids, { // index array - sent as part of init
+	arg msg, time, addr, port;
+	msg.postln;
+}, '/ids');
+
+)
+
 (  /* GLASS TRIG */
 
 OSCdef.new(\abs, { // absolute depth values - save for trig later
@@ -315,7 +397,7 @@ OSCdef.new(\rel, { // delta depth values - trigger the synths
 	// msg[1] = index; msg[2] = rel depth
 	var y_coordinate = msg[1] / ~y_size;
 	y_coordinate = y_coordinate.floor;
-	if(msg[2] > 0.025, {
+	if(msg[2] > 0.04, {
 		/*var freq = (~abs_depths[msg[1]]*1.75) * 20000;
 		Synth.new(\tri, [
 			//freq: (~abs_depths[msg[1]]**2) * 20000,
@@ -339,7 +421,7 @@ OSCdef.new(\rel, { // delta depth values - trigger the synths
 		Synth.new(\bell, [
 			freq: freq,
 			pan: 1 - (2 * (msg[1]%~x_size) / ~x_size),
-			amp: 0.025 + (msg[2] / 10),
+			amp: 0.15 + (msg[2] / 10),
 			decay: 0.1 + (y_coordinate * 2)
 		]);
 		/*var freq = (~abs_depths[msg[1]]*0.2) * 8000;
@@ -368,9 +450,10 @@ OSCdef.new(\ids, { // index array - sent as part of init
 ~scale = [0,2,3,7,8,12];
 //~scale = [0,2,3,7,8,12,14,15];
 //~scale = [0,1,3,4,6,7,9,11,12];
+//~scale = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19];
 //~noffset = 48;
 //~noffset = 36;
-~noffset = 12;
+~noffset = 36;
 
 OSCdef.new(\abs, { // absolute depth values - save for trig later
 	arg msg, time, addr, port;
