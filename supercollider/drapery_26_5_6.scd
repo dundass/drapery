@@ -205,9 +205,7 @@ SynthDef.new(\burst, {
 ~dronescale = [16,14,12,11,9,7,5,4,2,0];
 ~droneoffset = 42;
 
-~dronebank.do({|synth|
-	synth.free;
-});
+~dronebank.do(_.free);
 
 ~dronebank = Array.fill(~x_size * ~y_size, {
 	arg i;
@@ -244,9 +242,7 @@ OSCdef.new(\ids_drone, { // index array - set the pan values of the synths
 ~x_size = 8;
 ~y_size = 4;
 
-~dronebank.do({|synth|
-	synth.free;
-});
+~dronebank.do(_.free);
 
 ~dronebank = Array.fill(~x_size * ~y_size, {
 	arg i;
@@ -282,9 +278,7 @@ OSCdef.new(\ids_drone, { // index array - set the pan values of the synths
 ~x_size = 8;
 ~y_size = 4;
 
-~dronebank.do({|synth|
-	synth.free;
-});
+~dronebank.do(_.free);
 
 ~dronebank = Array.fill(~x_size * ~y_size, {
 	arg i;
@@ -321,9 +315,7 @@ OSCdef.new(\ids_drone, { // index array - set the pan values of the synths
 ~x_size = 8;
 ~y_size = 4;
 
-~dronebank.do({|synth|
-	synth.free;
-});
+~dronebank.do(_.free);
 
 ~dronebank = Array.fill(~x_size * ~y_size, {
 	arg i;
@@ -354,9 +346,7 @@ OSCdef.new(\ids_drone, { // index array - set the pan values of the synths
 )
 
 (  /* KILL DRONES */
-~dronebank.do({|synth|
-	synth.free;
-});
+~dronebank.do(_.free);
 OSCdef.new(\abs_drone, {}, '/absolute');
 OSCdef.new(\rel_drone, {}, '/relative');
 OSCdef.new(\ids_drone, {}, '/ids');
